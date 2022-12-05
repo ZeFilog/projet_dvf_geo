@@ -24,9 +24,18 @@ geo_35 = gpd.GeoDataFrame(data, geometry=gpd.points_from_xy(data["longitude"],da
 #print(geo_35)
 
 #afficher les points en fonction des prix et du 35000
+map_Rennes = gpd.read_file('perimetres-des-12-quartiers-de-la-ville-de-rennes.geojson')
+#map_Rennes.plot()
+#geo_35 = geo_35[(geo_35['code_postal'] == 35000) & (geo_35['valeur_fonciere'] < 200000)]
+#geo_35.plot(ax = map_Rennes.axes[0], column = "valeur_fonciere",legend = True, figsize = (5,5), cmap = 'RdYlBu')
 
-geo_35 = geo_35[(geo_35['code_postal'] == 35000) & (geo_35['valeur_fonciere'] < 200000)]
-geo_35.plot(column = "valeur_fonciere",legend = True, figsize = (5,5), cmap = 'RdYlBu')
+ax = geo_35.add_subplot(1, 1, 1)
+
+# Utilisez la méthode set_aspect sur l'objet AxesSubplot
+ax.set_aspect('equal')
+geo_35.plot(ax = map_Rennes.axes[0])
+
+#geo_35.plot(ax = map_Rennes.axes[0],column = "valeur_fonciere",cmap = 'viridis')
 
 #on va ajouter un fond a la carte
  #pip install folium matplotlib mapclassify
@@ -37,8 +46,8 @@ geo_35.plot(column = "valeur_fonciere",legend = True, figsize = (5,5), cmap = 'R
 #geo_wm = geo_35.to_crs(epsg = 3857)
 
 #normalement ça mets un fond de carte de rennes mais je comprend pas pq ça marche pas
-ax = geo_35.plot()
-cx.add_basemap(ax)
+
+
 plt.show()
 
 
