@@ -1,0 +1,160 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import geopandas as gpd
+import contextily as cx
+import folium
+import plotly.express as px
+from branca.colormap import linear
+from folium import plugins
+from shapely.geometry import shape, Point
+
+
+data = pd.read_csv('35.csv', low_memory= False)
+#############
+data = data.dropna(subset=["valeur_fonciere","latitude","longitude"])
+data["data_coordonnee"] = data['latitude'].astype(str) + "," + data['longitude'].astype(str)
+
+print(data['data_coordonnee'])
+data = data[(data['valeur_fonciere'] < 500000)&(data['code_postal'] == 35000)]
+
+    # création de la carte
+m = folium.Map(location=[48.1134, -1.6779], zoom_start=13)
+
+    # création de la palette de couleurs
+colormap = linear.YlGn_09.scale(data['valeur_fonciere'].min(), data['valeur_fonciere'].max())
+colormap.caption = 'Valeur foncière'
+
+for row in data.itertuples():
+    folium.CircleMarker(
+        location=[row.latitude, row.longitude],
+        radius=5,
+        color=colormap(row.valeur_fonciere),
+        fill=True,
+        fill_color=colormap(row.valeur_fonciere),
+        fill_opacity=0.7,
+        popup=str(row.valeur_fonciere)
+    ).add_to(m)
+    m.add_child(colormap)
+m
+###########
+# Créer la carte de base
+m = folium.Map(location=[48.117266, -1.6777926], zoom_start=13)
+
+# Ajouter les données sous forme de heatmap
+plugins.HeatMap(data=data[['latitude', 'longitude', 'valeur_fonciere']], name='Heat Map', overlay=True, show=True, control=True, show_legend=True, smooth_factor=0.1, min_opacity=0.2, max_val=data['valeur_fonciere'].max(), min_val=data['valeur_fonciere'].min()).add_to(m)
+
+# Afficher la carte
+m
+###########
+ref_bat = pd.read_csv('/Users/josselin/Desktop/projet_dvf_geo/referentiel_batiment.csv')
+#ref_bat = gpd.read_file('/Users/josselin/Desktop/projet_dvf_geo/referentiel_batiment.geojson')
+#ref_bat['geo_point_2d'] = ref_bat['geo_point_2d'].round(6)
+
+
+"""
+for i in range(len(ref_bat['geo_point_2d'])):
+    x, y = map(float, ref_bat['geo_point_2d'][i].split(','))
+    x = np.float128(x)
+    y = np.float128(y)
+    if x > 10**-6 or y > 10**-6:
+        x = round(x, 6)
+        y = round(y, 6)
+    ref_bat['geo_point_2d'][i] = (x, y)
+"""
+merged_df = pd.merge(data, ref_bat, left_on='data_coordonnee', right_on='geo_point_2d')
+
+print(merged_df.shape)
+#############
+
+database = [ "1.2345678575", "2.34", "3.45" ]
+for i in range(len(database)):
+    database[i] = np.float128(database[i])
+    if database[i] > 10**-6:
+        database[i] = round(database[i], 6)
+    database[i] = str(database[i])
+print(database)
+
+from decimal import Decimal, getcontext
+
+database = [ "1.2345678575", "2.34", "3.45" ]
+getcontext().prec = 6
+for i in range(len(database)):
+    database[i] = Decimal(database[i])
+    if database[i] > Decimal("1e-6"):
+        database[i] = Decimal(database[i])
+    database[i] = str(database[i])
+print(database)
+
+
+for i in range(len(ref_bat['geo_point_2d'])):
+    ref_bat['geo_point_2d'][i] = np.float128(ref_bat['geo_point_2d'][i])
+    if ref_bat['geo_point_2d'][i] > 10**-6:
+        ref_bat['geo_point_2d'][i] = round(ref_bat['geo_point_2d'][i], 6)
+    ref_bat['geo_point_2d'][i] = str(ref_bat['geo_point_2d'][i])
+print(ref_bat['geo_point_2d'])
+################
+# Load GeoJSON data
+import json
+with open('/Users/josselin/Desktop/projet_dvf_geo/referentiel_batiment.geojson') as f:
+    data1 = json.load(f)
+#data1 = data1(data1['code_insee'] == 35000)
+# Create a folium map centered on the mean of the coordinates
+map = folium.Map(location=[data1['features'][0]['geometry']['coordinates'][0][0][0][1],
+                           data1['features'][0]['geometry']['coordinates'][0][0][0][0]], zoom_start=13)
+
+# Add the GeoJSON data to the map
+folium.GeoJson(data1).add_to(map)
+
+map
+###############
+data2 = pd.read_json("/Users/josselin/Desktop/projet_dvf_geo/referentiel_batiment.geojson")
+
+# Filtre des données en fonction du code INSEE
+#filtered_data2 = data2[data2['code_insee'] == '35000']
+
+# Création de la carte
+m = folium.Map(location=[48.8566, 2.3522], zoom_start=12)
+
+# Ajout des géoshapes filtrés sur la carte
+#folium.GeoJson(filtered_data.to_json()).add_to(m)
+
+# Affichage de la carte
+m
+##########
+def match_geojson_data(geojson_file, df):
+    # Charger les données GeoJSON dans un objet python
+    with open(geojson_file) as f:
+        geojson_data = json.load(f)
+
+    # Ajouter une colonne 'geometry' au dataframe pour stocker les formes géographiques correspondant aux données de valeur foncière
+    df['geometry'] = None
+
+    # Pour chaque entrée dans les données GeoJSON
+    for feature in geojson_data['features']:
+        # Récupérer la forme géographique
+        geom = shape(feature['geometry'])
+        # Pour chaque entrée dans le dataframe
+        for i, row in df.iterrows():
+            # Créer un point à partir des coordonnées 'latitude' et 'longitude'
+            point = Point(row['longitude'], row['latitude'])
+            # Si le point est à l'intérieur de la forme géographique
+            if geom.contains(point):
+                print('oui oui')
+                # Stocker la forme géographique dans la colonne 'geometry'
+                df.at[i, 'geometry'] = geom
+                # Passer à la prochaine entrée du dataframe
+                break
+                
+    return df
+##############
+# Charger les données dans un dataframe pandas
+df = pd.read_csv("35.csv",low_memory=False)
+
+# Matching des données foncières et GEO
+match_data = match_geojson_data('/Users/josselin/Desktop/projet_dvf_geo/referentiel_batiment.geojson', df)
+
+m = folium.Map(location=[48.117266, -1.6777926], zoom_start=13)
+plugins.HeatMap(data=match_data[['latitude', 'longitude', 'valeur_fonciere']], name='Heat Map', overlay=True, show=True, control=True, show_legend=True, smooth_factor=0.1, min_opacity=0.2, max_val=df['valeur_fonciere'].max(), min_val=df['valeur_fonciere'].min()).add_to(m)
+
+m
