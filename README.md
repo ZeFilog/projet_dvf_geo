@@ -8,6 +8,8 @@ immobiliers plus transparents. Le fichier comportant des informations à caract�
 son utilisation nécessite certaines précautions :
 1. ne doit pas permettre de ré-identifier les personnes concernées, de manière indirecte
 2. ne doit pas permettre l'indexation des informations sur les moteurs de recherche
+
+
 Ce jeu de données "Demandes de valeurs foncières", publié par la DGFiP, recense les
 transactions immobilières des 5 dernières années en métropole et DOM-TOM (sauf Alsace,
 Moselle et Mayotte). Les informations sont tirées des actes notariés et des données
